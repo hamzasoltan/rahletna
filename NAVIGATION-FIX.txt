@@ -1,0 +1,5 @@
+RAHLETNA NAVIGATION FIX
+
+This build contains the root navigation fix.
+The navigation setter is named navigateView, not setView.
+There should be ZERO occurrences of "setView" in src/main.tsx.
