@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Goal, Habit, HabitLog, Milestone, Profile, Task, Connection, Encouragement, EncouragementReaction, ReactionType, Notification, ThemeSettings, UserTheme, ThemeRequest } from './types';
+import type { Goal, Habit, HabitLog, Milestone, GoalStepLog, Profile, Task, Connection, Encouragement, EncouragementReaction, ReactionType, Notification, ThemeSettings, UserTheme, ThemeRequest } from './types';
 
 export async function getProfile(id:string){const {data,error}=await supabase.from('profiles').select('*').eq('id',id).single(); if(error) throw error; return data as Profile;}
 
@@ -58,6 +58,8 @@ export async function getMilestones(goalId:string,userId:string){const {data,err
 export async function saveMilestone(m:Partial<Milestone>&{user_id:string}){const {data,error}=await supabase.from('milestones').insert(m).select().single();if(error)throw error;return data as Milestone}
 export async function toggleMilestone(id:string,userId:string,completed:boolean){const {data,error}=await supabase.from('milestones').update({completed}).eq('id',id).eq('user_id',userId).select().single();if(error)throw error;return data as Milestone}
 export async function deleteMilestone(id:string,userId:string){const {error}=await supabase.from('milestones').delete().eq('id',id).eq('user_id',userId);if(error)throw error}
+export async function getGoalStepLogs(userId:string,from:string,to:string){const {data,error}=await supabase.from('goal_step_logs').select('*').eq('user_id',userId).gte('log_date',from).lte('log_date',to);if(error)throw error;return(data??[]) as GoalStepLog[]}
+export async function logGoalStep(milestoneId:string,goalId:string,userId:string,date:string,completed:boolean){const {data,error}=await supabase.from('goal_step_logs').upsert({milestone_id:milestoneId,goal_id:goalId,user_id:userId,log_date:date,completed},{onConflict:'milestone_id,log_date'}).select().single();if(error)throw error;return data as GoalStepLog}
 
 export async function deleteEncouragement(id:string,userId:string){const {error}=await supabase.from('encouragements').delete().eq('id',id).eq('sender_id',userId);if(error)throw error}
 export async function getReactions(encouragementIds:string[]){if(!encouragementIds.length)return [] as EncouragementReaction[];const {data,error}=await supabase.from('encouragement_reactions').select('*').in('encouragement_id',encouragementIds).order('created_at',{ascending:true});if(error)throw error;return(data??[]) as EncouragementReaction[]}
