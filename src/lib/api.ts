@@ -19,7 +19,7 @@ export async function updateProfile(id:string,p:Partial<Profile>){const {data,er
 export async function getConnection(userId:string){const {data,error}=await supabase.from('connections').select('*').or(`requester_id.eq.${userId},recipient_id.eq.${userId}`).order('created_at',{ascending:false}).limit(1).maybeSingle(); if(error) throw error; return data as Connection|null;}
 export async function createInvite(userId:string){const code=crypto.randomUUID().replaceAll('-','').slice(0,10).toUpperCase(); const {data,error}=await supabase.from('connections').insert({requester_id:userId,invite_code:code,status:'pending'}).select().single(); if(error) throw error; return data as Connection;}
 export async function acceptInvite(code:string){const {data,error}=await supabase.rpc('accept_invite',{p_invite_code:code.trim().toUpperCase()}); if(error) throw error; return data as Connection;}
-export async function getTasks(userId:string, from:string, to:string){const {data,error}=await supabase.from('tasks').select('*').eq('user_id',userId).gte('task_date',from).lte('task_date',to).order('task_date',{ascending:true}).order('created_at',{ascending:true}); if(error) throw error; return (data??[]) as Task[];}
+export async function getTasks(userId:string, from:string, to:string){const {data,error}=await supabase.from('tasks').select('*').eq('user_id',userId).gte('task_date',from).lt('task_date',to).order('task_date',{ascending:true}).order('created_at',{ascending:true}); if(error) throw error; return (data??[]) as Task[];}
 export async function upsertTask(task:Partial<Task>&{user_id:string}){
   if(task.id){
     const {id,user_id,...changes}=task;
