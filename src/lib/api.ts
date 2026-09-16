@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Goal, Habit, HabitLog, Milestone, GoalStepLog, Profile, Task, Connection, Encouragement, EncouragementReaction, ReactionType, Notification, ThemeSettings, UserTheme, ThemeRequest } from './types';
+import type { Goal, Habit, HabitLog, Milestone, Profile, Task, Connection, Encouragement, EncouragementReaction, ReactionType, Notification } from './types';
 
 export async function getProfile(id:string){const {data,error}=await supabase.from('profiles').select('*').eq('id',id).single(); if(error) throw error; return data as Profile;}
 
@@ -58,8 +58,6 @@ export async function getMilestones(goalId:string,userId:string){const {data,err
 export async function saveMilestone(m:Partial<Milestone>&{user_id:string}){const {data,error}=await supabase.from('milestones').insert(m).select().single();if(error)throw error;return data as Milestone}
 export async function toggleMilestone(id:string,userId:string,completed:boolean){const {data,error}=await supabase.from('milestones').update({completed}).eq('id',id).eq('user_id',userId).select().single();if(error)throw error;return data as Milestone}
 export async function deleteMilestone(id:string,userId:string){const {error}=await supabase.from('milestones').delete().eq('id',id).eq('user_id',userId);if(error)throw error}
-export async function getGoalStepLogs(userId:string,from:string,to:string){const {data,error}=await supabase.from('goal_step_logs').select('*').eq('user_id',userId).gte('log_date',from).lte('log_date',to);if(error)throw error;return(data??[]) as GoalStepLog[]}
-export async function logGoalStep(milestoneId:string,goalId:string,userId:string,date:string,completed:boolean){const {data,error}=await supabase.from('goal_step_logs').upsert({milestone_id:milestoneId,goal_id:goalId,user_id:userId,log_date:date,completed},{onConflict:'milestone_id,log_date'}).select().single();if(error)throw error;return data as GoalStepLog}
 
 export async function deleteEncouragement(id:string,userId:string){const {error}=await supabase.from('encouragements').delete().eq('id',id).eq('sender_id',userId);if(error)throw error}
 export async function getReactions(encouragementIds:string[]){if(!encouragementIds.length)return [] as EncouragementReaction[];const {data,error}=await supabase.from('encouragement_reactions').select('*').in('encouragement_id',encouragementIds).order('created_at',{ascending:true});if(error)throw error;return(data??[]) as EncouragementReaction[]}
@@ -67,14 +65,3 @@ export async function toggleReaction(encouragementId:string,userId:string,reacti
 export async function getNotifications(userId:string){const {data,error}=await supabase.from('notifications').select('*').eq('user_id',userId).order('created_at',{ascending:false}).limit(50);if(error)throw error;return(data??[]) as Notification[]}
 export async function markNotificationRead(id:string,userId:string){const {data,error}=await supabase.from('notifications').update({read_at:new Date().toISOString()}).eq('id',id).eq('user_id',userId).select().single();if(error)throw error;return data as Notification}
 export async function markAllNotificationsRead(userId:string){const {error}=await supabase.from('notifications').update({read_at:new Date().toISOString()}).eq('user_id',userId).is('read_at',null);if(error)throw error}
-
-
-export async function getThemeSettings(userId:string){const {data,error}=await supabase.from('theme_settings').select('*').eq('user_id',userId).maybeSingle();if(error)throw error;return data as ThemeSettings|null}
-export async function ensureThemeSettings(userId:string){const existing=await getThemeSettings(userId);if(existing)return existing;const {data,error}=await supabase.from('theme_settings').insert({user_id:userId,active_theme_id:null,shared_mode:false}).select().single();if(error)throw error;return data as ThemeSettings}
-export async function getUserThemes(userId:string){const {data,error}=await supabase.from('themes').select('*').eq('owner_id',userId).order('updated_at',{ascending:false});if(error)throw error;return(data??[]) as UserTheme[]}
-export async function getTheme(id:string){const {data,error}=await supabase.from('themes').select('*').eq('id',id).single();if(error)throw error;return data as UserTheme}
-export async function saveTheme(theme:Partial<UserTheme>&{owner_id:string}){if(theme.id){const {id,owner_id,...changes}=theme;changes.updated_at=new Date().toISOString();const {data,error}=await supabase.from('themes').update(changes).eq('id',id).eq('owner_id',owner_id).select().single();if(error)throw error;return data as UserTheme}const {data,error}=await supabase.from('themes').insert({...theme,updated_at:new Date().toISOString()}).select().single();if(error)throw error;return data as UserTheme}
-export async function setActiveTheme(userId:string,themeId:string|null,sharedMode=false){const {data,error}=await supabase.from('theme_settings').upsert({user_id:userId,active_theme_id:themeId,shared_mode:sharedMode,updated_at:new Date().toISOString()},{onConflict:'user_id'}).select().single();if(error)throw error;return data as ThemeSettings}
-export async function createThemeRequest(themeId:string,requesterId:string,recipientId:string){const {data,error}=await supabase.from('theme_requests').insert({theme_id:themeId,requester_id:requesterId,recipient_id:recipientId,status:'pending'}).select().single();if(error)throw error;return data as ThemeRequest}
-export async function getThemeRequests(userId:string){const {data,error}=await supabase.from('theme_requests').select('*').or(`requester_id.eq.${userId},recipient_id.eq.${userId}`).order('created_at',{ascending:false}).limit(30);if(error)throw error;return(data??[]) as ThemeRequest[]}
-export async function respondThemeRequest(requestId:string,userId:string,accept:boolean){const {data,error}=await supabase.rpc('respond_theme_request',{p_request_id:requestId,p_accept:accept});if(error)throw error;return data as ThemeRequest}
